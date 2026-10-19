@@ -26,8 +26,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 @app.post(
     '/register',
     response_model=schemas.GetUserResponse,
-    description='Регистрирует нового пользователя. '
-                'Первый пользователь в системе получает роль администратора.'
+    description='Регистрирует нового пользователя с ролью employee.'
 )
 async def register(
         user_data: schemas.RegisterRequest,

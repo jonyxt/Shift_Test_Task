@@ -6,7 +6,7 @@
 """
 import datetime
 
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
 from .models import UserRole
 
 
@@ -16,6 +16,15 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     email: EmailStr
     phone: str | None = Field(default=None, max_length=12)
+
+    @field_validator('password')
+    @classmethod
+    def validate_password_bytes(cls, value: str) -> str:
+        if len(value.encode('utf=8')) > 72:
+            raise ValueError(
+                'Пароль не должен превышать 72 байта UTF-8'
+            )
+        return value
 
 class LoginRequest(BaseModel):
     """Данные для получения JWT-токена."""

@@ -23,6 +23,10 @@ from .dependencies import get_db_session
 JWT_SECRET = os.getenv('JWT_SECRET')
 if not JWT_SECRET:
     raise ValueError('JWT_SECRET не задан')
+if len(JWT_SECRET.encode("utf-8")) < 32:
+    raise ValueError(
+        "JWT_SECRET должен содержать не менее 32 байт"
+    )
 JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
 JWT_EXP_DELTA_SECONDS = int(os.getenv('JWT_EXP_DELTA_SECONDS', '3600'))
 
@@ -51,7 +55,15 @@ def check_password(password: str, hashed_password: str) -> bool:
     Returns:
         True, если пароль соответствует хешу, иначе False.
     """
-    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+    password_bytes = password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        return False
+
+    return bcrypt.checkpw(
+        password_bytes,
+        hashed_password.encode("utf-8")
+    )
 
 def create_access_token(user_id: int) -> str:
     """Создает JWT access token для пользователя.
@@ -85,7 +97,12 @@ def decode_access_token(token: str) -> dict:
         jwt.InvalidTokenError: Если токен некорректен.
         jwt.ExpiredSignatureError: Если срок действия токена истек.
     """
-    return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    return jwt.decode(
+        token,
+        JWT_SECRET,
+        algorithms=[JWT_ALGORITHM],
+        options={"require": ["exp", "sub"]},
+    )
 
 async def get_current_user(
         credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer_scheme)],

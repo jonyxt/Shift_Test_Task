@@ -85,26 +85,16 @@ async def register_user(
         session: AsyncSession,
         user_data: schemas.RegisterRequest
 ) -> models.User:
-    """Регистрирует нового пользователя.
-
-    Проверяет уникальность username и email. Если пользователь создается первым
-    в системе, назначает ему роль администратора. Все следующие пользователи
-    получают роль сотрудника.
+    """Регистрирует нового пользователя с ролью employee.
 
     Пароль сохраняется в базе данных только в виде хеша.
     """
-    users_count_query = select(func.count()).select_from(models.User)
-    user_count = await session.scalar(users_count_query)
-    if user_count == 0:
-        user_role = models.UserRole.ADMIN
-    else:
-        user_role = models.UserRole.EMPLOYEE
     new_user = models.User(
         username=user_data.username,
         hashed_password=auth.hash_password(user_data.password),
         email=user_data.email,
         phone=user_data.phone,
-        role=user_role
+        role=models.UserRole.EMPLOYEE
     )
     session.add(new_user)
     return await commit_refresh_db(
