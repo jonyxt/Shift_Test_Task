@@ -70,7 +70,7 @@ async def save_admin(user_data: schemas.RegisterRequest) -> int:
         async with AsyncSessionLocal() as session:
             return await create_initial_admin(session, user_data)
     finally:
-        engine.dispose()
+        await engine.dispose()
 
 def main() -> int:
     """Интерактивное создание первого администратора."""

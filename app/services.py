@@ -333,7 +333,17 @@ async def book_room_cancel(
     может отменить любое бронирование. Отмена выполняется через изменение флага
     is_active, без удаления записи из базы данных.
     """
-    booking = await get_db_object_by_id(session, models.Booking, booking_id)
+    # Блокируем строку до завершения транзакции.
+    # Второй запрос на отмену дождётся первого.
+    await session.execute(
+        select(models.Booking.id)
+        .where(models.Booking.id == booking_id)
+        .with_for_update()
+    )
+
+    booking = await get_db_object_by_id(
+        session, models.Booking, booking_id
+    )
     if current_user.role == models.UserRole.EMPLOYEE:
         if current_user.id != booking.owner_id:
             raise HTTPException(
