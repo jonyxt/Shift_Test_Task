@@ -17,6 +17,7 @@ services:
       test_db:
         condition: service_healthy
     environment:
+      APP_ENV: test
       BASE_URL: http://127.0.0.1:8000
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -35,7 +36,11 @@ services:
       import time
       import urllib.error
       import urllib.request
-
+      # Apply migrations to the isolated test database.
+      subprocess.run(
+          [sys.executable, "-m", "alembic", "upgrade", "head"],
+          check=True,
+      )
       # Temporary HTTP API stays inside this tests container.
       server = subprocess.Popen([
           sys.executable, "-m", "uvicorn", "app.app:app",
@@ -96,7 +101,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed:
+        condition: service_completed_successfully
     environment:
+      APP_ENV: ${APP_ENV:-dev}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -111,6 +121,43 @@ services:
       timeout: 5s
       retries: 12
       start_period: 5s
+
+  migrate:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      JWT_EXP_DELTA_SECONDS: ${JWT_EXP_DELTA_SECONDS}
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
+  seed:
+    build: .
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      JWT_EXP_DELTA_SECONDS: ${JWT_EXP_DELTA_SECONDS}
+    command: ["python", "-m", "app.seed_data"]
+    restart: "no"
+
 
 volumes:
   postgres_data:

@@ -4,8 +4,6 @@
 создания и декодирования JWT-токенов, а также FastAPI dependencies
 для получения текущего пользователя и проверки прав администратора.
 """
-import os
-
 import jwt
 import bcrypt
 
@@ -18,17 +16,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import models
 from .dependencies import get_db_session
+from .config import get_settings
 
 
-JWT_SECRET = os.getenv('JWT_SECRET')
-if not JWT_SECRET:
-    raise ValueError('JWT_SECRET не задан')
-if len(JWT_SECRET.encode("utf-8")) < 32:
-    raise ValueError(
-        "JWT_SECRET должен содержать не менее 32 байт"
-    )
-JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
-JWT_EXP_DELTA_SECONDS = int(os.getenv('JWT_EXP_DELTA_SECONDS', '3600'))
+settings = get_settings()
+
+JWT_SECRET = settings.JWT_SECRET
+JWT_ALGORITHM = settings.JWT_ALGORITHM
+JWT_EXP_DELTA_SECONDS = settings.JWT_EXP_DELTA_SECONDS
+
 
 bearer_scheme = HTTPBearer()
 

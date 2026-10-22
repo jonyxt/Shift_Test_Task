@@ -38,49 +38,6 @@ async def commit_refresh_db(model: ModelType, error: str, session: AsyncSession)
             detail=f"{error}"
         )
 
-async def initial_rooms_and_time_windows(session: AsyncSession) -> None:
-    """Создает стартовые комнаты и временные слоты, если они отсутствуют.
-
-    Функция используется при запуске приложения. Она проверяет наличие записей
-    в таблицах комнат и временных слотов и добавляет базовый набор данных только
-    в пустые таблицы, чтобы не дублировать записи при повторном старте.
-    """
-    rooms_count_query = select(func.count()).select_from(models.Room)
-    rooms_count = await session.scalar(rooms_count_query)
-    if rooms_count > 0:
-        return
-    rooms = {
-        'Большой конференц зал': 'До 25 человек',
-        'Средний конференц зал': 'До 15 человек',
-        'Малый конференц зал': 'До 8 человек'
-    }
-    for room_name, room_description in rooms.items():
-        new_room = models.Room(
-            room_name=room_name,
-            description=room_description
-        )
-        session.add(new_room)
-        await session.flush()
-        time_windows = [
-            models.TimeWindow(
-                room_id=new_room.id,
-                start_time=datetime.time(9, 0),
-                end_time=datetime.time(12, 0)
-            ),
-            models.TimeWindow(
-                room_id=new_room.id,
-                start_time=datetime.time(13, 0),
-                end_time=datetime.time(16, 0)
-            ),
-            models.TimeWindow(
-                room_id=new_room.id,
-                start_time=datetime.time(16, 0),
-                end_time=datetime.time(19, 0)
-            )
-        ]
-        session.add_all(time_windows)
-    await session.commit()
-
 async def register_user(
         session: AsyncSession,
         user_data: schemas.RegisterRequest

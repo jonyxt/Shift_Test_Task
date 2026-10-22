@@ -14,7 +14,8 @@ RUN pip install --upgrade pip \
     && poetry install --no-root
 
 COPY app ./app
-
+COPY alembic.ini ./alembic.ini
+COPY alembic ./alembic
 COPY tests ./tests
 
 CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "8000"]

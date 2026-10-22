@@ -7,7 +7,7 @@ import jwt
 from uuid import uuid4
 from sqlalchemy import text
 from app.config import config
-from app.services import initial_rooms_and_time_windows
+from app.seed_data import seed_initial_data
 
 from app import auth, models, schemas
 from app.bootstrap_admin import create_initial_admin
@@ -44,7 +44,7 @@ def prepare_test_database():
 
             # 2. Восстанавливаем комнаты и временные слоты.
             async with AsyncSessionLocal() as session:
-                await initial_rooms_and_time_windows(session)
+                await seed_initial_data(session)
 
             # 3. Создаём тестового администратора.
             data = schemas.RegisterRequest(
